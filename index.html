@@ -44,7 +44,7 @@
       </div>
       <div class="kpi">
         <div class="kpi-val">28.26 GiB</div>
-        <div class="kpi-lbl">Qwen3.8 MaxQ-32GB cold-cache Cgroup v2 peak (&le;28.5 GiB, Swap=0, &gt;10.5 GiB PLE unfaulted)</div>
+        <div class="kpi-lbl">Qwen3.8 MaxQ-32GB cold-cache Cgroup v2 peak (&le;28.5 GiB, 0.24 GiB headroom at 32K, pgsteal=0, &gt;10.5 GiB PLE unfaulted)</div>
       </div>
       <div class="kpi">
         <div class="kpi-val green">15.64 / 22.00 t/s</div>
@@ -99,27 +99,28 @@ cd llama-modchip
       and <code>LUT-VQ3-64</code> (3.00 bpw) AVX-512 / NEON / Metal kernels.
     </p>
     <p style="font-size: 0.9rem; color: var(--muted);">
-      <strong>Host &amp; Cold-Cache Cgroup v2 Proof (All 4 Flagships, Swap=0, oom_kill=0):</strong> Reference Zen 5 runs
-      execute on a 16-core AMD Ryzen 9 9955HX Linux container (<strong>74.0 GiB RAM</strong>, <code>Swap=0</code>,
-      <code>0 GPU</code>). Tier residency across all four flagships is independently proven after hypervisor
-      <code>drop_caches=3</code> + <code>POSIX_FADV_DONTNEED</code> (guest <code>Cached = 0.3 GiB</code> at start) over
-      <code>n = 3</code> independent cold server restarts per config at <code>-c 32768</code>
-      (<code>MemoryAccounting=yes</code>, <code>MemorySwapMax=0</code>):
-      <code>Qwen3.8 MaxQ-64GB</code> (<code>60.0 GiB</code> cap: <code>48.35 GiB</code> cg.peak, <code>pgsteal=0</code>,
+      <strong>Host &amp; Cold-Cache Cgroup v2 Results (Swap=0, oom_kill=0):</strong> Reference Zen 5 runs execute on a
+      16-core AMD Ryzen 9 9955HX Linux container (<strong>74.0 GiB RAM</strong>, <code>Swap=0</code>, <code>0 GPU</code>).
+      All four flagships were tested after hypervisor <code>drop_caches=3</code> + <code>POSIX_FADV_DONTNEED</code>
+      (guest <code>Cached = 0.3 GiB</code> at start) over <code>n = 3</code> independent cold server restarts per config
+      at <code>-c 32768</code> (<code>MemoryAccounting=yes</code>, <code>MemorySwapMax=0</code>):
+      <strong>Certified strictly below cap (<code>pgsteal=0</code>, <code>refault=0</code>):</strong>
+      <code>Qwen3.8 MaxQ-64GB</code> (<code>60.0 GiB</code> cap: <code>48.35 GiB</code> cg.peak,
       <code>15.64 &plusmn; 0.05 t/s</code> RC2 vs <code>8.78 &plusmn; 0.02</code> N=1 in
-      <code>qwen38_64gb_cgroup60g_v311.json</code>);
-      <code>DeepSeek-V4 284B MaxQ-v4</code> (<code>60.0 GiB</code> cap: <code>59.73 GiB</code> VmHWM /
-      <code>60.00 GiB</code> cg.peak, <code>8.88 &plusmn; 0.25 t/s</code> RC2 vs <code>7.68 &plusmn; 0.01</code> N=1 in
-      <code>dsv4_64gb_cgroup60g_v311.json</code>);
-      <code>Qwen3.8 MaxQ-32GB</code> (<code>28.5 GiB</code> cap: <code>28.08 GiB</code> VmHWM / <code>28.26 GiB</code>
-      cg.peak, <code>pgsteal=0</code>, <code>&gt;10.5 GiB</code> PLE lazily unfaulted, <code>14.58 &plusmn; 0.32 t/s</code>
-      RC2 vs <code>10.00 &plusmn; 0.01</code> N=1 in <code>qwen38_32gb_cgroup28g_v311.json</code>);
-      and <code>Nemotron MaxQ-16GB</code> (<code>15.0 GiB</code> cap: <code>14.92 GiB</code> VmHWM /
-      <code>15.00 GiB</code> cg.peak, <code>26.28 &plusmn; 0.19 t/s</code> RC2 vs <code>22.64 &plusmn; 0.03</code> N=1 in
-      <code>nemotron_16gb_cgroup15g_v311.json</code>).
-      <em>(Disclosure: Qwen3.8 64G/32G fit strictly below cap with <code>pgsteal=0</code>; DS-V4 60G and MaxQ-16GB 15G
-      exercise clean file-page reclaim at <code>-c 32768</code> with <code>Swap=0</code>, and on our ZFS hypervisor
-      reclaimed file refaults may hit host ZFS ARC rather than raw NVMe.)</em>
+      <code>qwen38_64gb_cgroup60g_v311.json</code>) and <code>Qwen3.8 MaxQ-32GB</code> (<code>28.5 GiB</code> cap:
+      <code>28.08 GiB</code> VmHWM / <code>28.26 GiB</code> cg.peak — tight <code>0.24 GiB</code> headroom at 32K —
+      <code>&gt;10.5 GiB</code> PLE lazily unfaulted, <code>14.58 &plusmn; 0.32 t/s</code> RC2 vs
+      <code>10.00 &plusmn; 0.01</code> N=1 in <code>qwen38_32gb_cgroup28g_v311.json</code>);
+      <code>Nemotron MaxQ-16GB N=1</code> nearly fits <code>15.0 GiB</code> (<code>~15.03 GiB</code> needed,
+      <code>0.2 GiB</code> refault, <code>22.64 &plusmn; 0.03 t/s</code>).
+      <strong>Exceeds cap at <code>-c 32768</code> (OOM-free via host-ZFS-ARC-backed file reclaim; bare-metal
+      throughput unverified):</strong>
+      <code>DeepSeek-V4 284B MaxQ-v4</code> (<code>~60.3–60.7 GiB</code> needed; requires <code>&ge;61 GiB</code> free
+      RAM; <code>10.7–30.7 GiB</code> refaulted/run at <code>60G</code> in <code>dsv4_64gb_cgroup60g_v311.json</code>) and
+      <code>Nemotron MaxQ-16GB RC2</code> (<code>~15.75 GiB</code> needed; requires <code>&ge;16 GiB</code> free RAM;
+      <code>8.4–9.2 GiB</code> refaulted/run at <code>15G</code> in <code>nemotron_16gb_cgroup15g_v311.json</code>).
+      Because refaults on our Proxmox host are served from host ZFS ARC RAM rather than NVMe, those reclaim-bound speeds
+      do not transfer to bare-metal 64/16 GB boxes below 61/16 GiB free RAM.
     </p>
 
     <div class="table-wrap">
@@ -147,9 +148,9 @@ cd llama-modchip
             <td><strong>64 GB</strong></td>
             <td><a href="https://huggingface.co/Synchopate/DeepSeek-V4-Flash-0731-MaxQ-v4-64GB-CPU-GGUF">DeepSeek-V4-Flash-0731-MaxQ-v4</a><br><small>284.3B total · 13.2B active · 34L ConeCollapse</small></td>
             <td><span class="tag std">Std types + v3.1.1 bias</span><br><small>0 custom types; v3.1.1 loader</small></td>
-            <td>57.99 GiB<br><small><strong>60.00 GiB</strong> cold cg (59.73 VmHWM, Swap=0)</small></td>
+            <td>57.99 GiB<br><small>~60.5 GiB WS (needs &ge;61G free; 60G cg: ARC reclaim)</small></td>
             <td><strong>6.8592</strong><br><small>0.6485 KLD (51c)</small></td>
-            <td><strong>8.88&plusmn;0.25 / 16.14 W1</strong><br><small>Cold 60G cg (7.79 / 12.31 uncapped)</small></td>
+            <td><strong>7.79 agg / 12.31 W1 t/s</strong><br><small>Uncapped 74G host (6.80 N=1)</small></td>
           </tr>
           <tr>
             <td><strong>32 GB</strong></td>
@@ -163,9 +164,9 @@ cd llama-modchip
             <td><strong>16 GB</strong></td>
             <td><a href="https://huggingface.co/Synchopate/NVIDIA-Nemotron-3.5-30B-A3B-MaxQ-16GB-GGUF">Nemotron-3.5-30B-MaxQ-16GB</a><br><small>30.2B total · 3B active · Mamba-2 + MoE</small></td>
             <td><span class="tag std">Universal Std ggml</span><br><small>Upstream llama.cpp (Q2_0=42)</small></td>
-            <td>13.39 GiB<br><small><strong>15.00 GiB</strong> cold cg (14.92 VmHWM, Swap=0)</small></td>
+            <td>13.39 GiB<br><small>~15.0G N=1 (0.2G refault) / ~15.8G RC2</small></td>
             <td><strong>7.3129</strong><br><small>0.1722 vs MXFP4</small></td>
-            <td><strong>26.28&plusmn;0.19 / 43.53 W1</strong><br><small>Cold 15G cg (22.64 N=1, 0 custom types)</small></td>
+            <td><strong>22.64 N=1</strong> (15G cg)<br><small>26.28* RC2 (ARC recl. at 15G; needs &ge;16G)</small></td>
           </tr>
           <tr>
             <td><strong>16–24 GB</strong></td>
@@ -205,8 +206,8 @@ cd llama-modchip
         MaxQ-64GB cuts KLD by 46.6% vs 54.40 GiB coder-pruned IQ1_M (256/512 experts) while preserving all 512/512 experts
         and the blk.48 NextN MTP head; MaxQ-32GB (28.26 GiB cold-cache cgroup peak via 42L ConeCollapse + lazy NVMe PLE,
         <code>pgsteal=0</code>) is the sole checkpoint certified under a strict 28.5 GiB Cgroup v2 ceiling with Swap=0.
-        On DeepSeek-V4 (b), MaxQ-v4 passes cold-cache 60.0 GiB Cgroup v2 (Swap=0). On Nemotron (c), MaxQ-16GB passes
-        cold-cache 15.0 GiB Cgroup v2 (Swap=0), while VQ3-64 and Fractal-64 target 16–24 GB hosts.
+        On DeepSeek-V4 (b), MaxQ-v4 requires ~60.5 GiB working set (&ge;61 GiB free for zero-refault bare-metal residency).
+        On Nemotron (c), MaxQ-16GB N=1 nearly fits 15.0 GiB (0.2 GiB refault; RC2 needs ~15.75 GiB), while VQ3-64 and Fractal-64 target 16–24 GB hosts.
       </figcaption>
     </figure>
 

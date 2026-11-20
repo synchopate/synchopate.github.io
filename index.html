@@ -61,13 +61,15 @@
         <source src="assets/zero_gpu_live_demo.mp4" type="video/mp4">
       </video>
       <p style="margin: 0; padding: 10px 14px; font-size: 0.84rem; color: var(--muted); border-top: 1px solid var(--border);">
-        <strong>Raw 1.0&times; Uncut 4-Pane Linux Terminal Capture (0 GPU, Cold-Cache 60 GiB Cgroup v2):</strong>
-        Stock <code>top -c -p</code> (<code>1608% CPU</code>, <code>45.5g RES</code>, <code>MiB Swap: 0.0</code>), raw
-        <code>/sys/fs/cgroup</code> counters (<code>45.69 GiB &le; 60.00 GiB</code> peak, <code>pgsteal=0</code>,
-        <code>refault=0</code>), live <code>llama-server</code> stderr, and bash streaming a greenfield 354-token C11
-        lock-free SPSC ring buffer from 176.5B <code>Qwen3.8-MaxQ-64GB</code> (<code>--spec-type routecrack2</code>):
-        82-token prefill @ 49.70 tok/s (1.65 s) + 354-token decode @ <strong>13.11 tok/s</strong> (<code>tg_3s</code> up to
-        15.09 tok/s; 256/325 = <strong>78.8%</strong> draft acceptance, mean len 3.64, <code>truncated=0</code>).
+        <strong>Live 1.0&times; Uncut 4-Pane Linux Terminal Capture (0 GPU, Post-26.5 s Cold Load into 60 GiB Cgroup v2):</strong>
+        Stock <code>top -c -p</code> (<code>1602% CPU</code>, <code>45.5g RES</code>, <code>MiB Swap: 0.0</code>), raw
+        <code>/sys/fs/cgroup</code> counters (<code>45.68 GiB &le; 60.00 GiB</code> peak, <code>pgsteal=0</code>,
+        <code>refault=0</code>), live <code>llama-server</code> stderr, and interactive <code>root</code> bash
+        (commands pasted; <code>nvidia-smi</code> absent, <code>llama-server --list-devices</code> = <code>(none)</code>)
+        streaming a greenfield 360-token C11 lock-free SPSC ring buffer from 176.5B <code>Qwen3.8-MaxQ-64GB</code>
+        (<code>--spec-type routecrack2</code>): 73-token prefill @ 46.14 tok/s (1.58 s) + 360-token decode @
+        <strong>12.97 tok/s</strong> (<code>tg_3s</code> up to 16.08 tok/s; 259/329 = <strong>78.7%</strong> draft
+        acceptance, mean len 3.59, <code>truncated=0</code>).
       </p>
     </div>
   </header>

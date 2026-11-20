@@ -31,12 +31,14 @@
         <source src="../../assets/zero_gpu_live_demo.mp4" type="video/mp4">
       </video>
       <p style="margin: 0; padding: 10px 14px; font-size: 0.84rem; color: var(--muted); border-top: 1px solid var(--border);">
-        <strong>Raw 1.0&times; Uncut 4-Pane Linux Terminal Capture (0 GPU, Cold-Cache 60 GiB Cgroup v2):</strong>
-        Stock <code>top</code> (<code>1608% CPU</code>, <code>45.5g RES</code>, <code>Swap: 0.0</code>), raw
-        <code>/sys/fs/cgroup</code> (<code>45.69 GiB &le; 60 GiB</code>, <code>pgsteal=0</code>), live
-        <code>llama-server</code> stderr, and bash generating a complete 354-token greenfield C11 lock-free SPSC ring
-        buffer from 176.5B <code>Qwen3.8-MaxQ-64GB</code> at <strong>13.11 tok/s</strong> (256/325 = 78.8% draft
-        acceptance, mean len 3.64, <code>truncated=0</code>).
+        <strong>Live 1.0&times; Uncut 4-Pane Linux Terminal Capture (64 GB Tier Demo — see Section 2 for the 28.5 GiB
+        <code>MaxQ-32GB</code> lazy-PLE proof):</strong> Captured immediately after <code>llama-server</code>'s 26.5 s
+        cold load into a 60 GiB Cgroup v2 (<code>Swap=0</code>, <code>--list-devices</code> = <code>(none)</code>).
+        Stock <code>top</code> (<code>1602% CPU</code>, <code>45.5g RES</code>), raw <code>/sys/fs/cgroup</code>
+        (<code>45.68 GiB &le; 60 GiB</code>, <code>pgsteal=0</code>), live <code>llama-server</code> stderr, and
+        interactive bash (commands pasted) generating a 360-token greenfield C11 lock-free SPSC ring buffer from 176.5B
+        <code>Qwen3.8-MaxQ-64GB</code> at <strong>12.97 tok/s</strong> (<code>tg_3s</code> up to 16.08 t/s; 259/329 =
+        78.7% draft acceptance, mean len 3.59, <code>truncated=0</code>).
       </p>
     </div>
   </header>

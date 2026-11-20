@@ -31,10 +31,12 @@
         <source src="../../assets/zero_gpu_live_demo.mp4" type="video/mp4">
       </video>
       <p style="margin: 0; padding: 10px 14px; font-size: 0.84rem; color: var(--muted); border-top: 1px solid var(--border);">
-        <strong>Live 1.0&times; Uncut X11 Screen Capture (0 GPU, Cold-Cache 60 GiB Cgroup v2):</strong>
-        176.5B <code>Qwen3.8-MaxQ-64GB</code> running <code>RouteCrack 2.0</code> on 16 Zen 5 CPU cores
-        (<code>Swap=0</code>, <code>pgsteal=0</code>, <code>46.26 GiB &le; 60 GiB</code>): 688-token prefill in 7.95 s
-        (86.54 tok/s) + 256-token refactor @ <strong>19.65 tok/s</strong> (210/210 draft accepted, live <code>/proc/stat</code> &amp; <code>/sys/fs/cgroup</code> telemetry).
+        <strong>Raw 1.0&times; Uncut 4-Pane Linux Terminal Capture (0 GPU, Cold-Cache 60 GiB Cgroup v2):</strong>
+        Stock <code>top</code> (<code>1608% CPU</code>, <code>45.5g RES</code>, <code>Swap: 0.0</code>), raw
+        <code>/sys/fs/cgroup</code> (<code>45.69 GiB &le; 60 GiB</code>, <code>pgsteal=0</code>), live
+        <code>llama-server</code> stderr, and bash generating a complete 354-token greenfield C11 lock-free SPSC ring
+        buffer from 176.5B <code>Qwen3.8-MaxQ-64GB</code> at <strong>13.11 tok/s</strong> (256/325 = 78.8% draft
+        acceptance, mean len 3.64, <code>truncated=0</code>).
       </p>
     </div>
   </header>

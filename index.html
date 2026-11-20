@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Synchopate — Zero-GPU Frontier AI (llama-modchip v3.1.1 &amp; MaxQ)</title>
+  <meta name="description" content="Open-source CPU inference engine and donor-free MaxQ quantization running 30B–284B Sparse MoE models on 16–64 GB commodity workstations with zero GPU.">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="wrap">
+  <nav>
+    <a class="brand" href="./">synchopate<span>.github.io</span></a>
+    <div class="nav-links">
+      <a href="#benchmarks">Benchmarks</a>
+      <a href="posts/zero-gpu-frontier-ai/">Technical Essay</a>
+      <a href="paper/llama-modchip-paper.pdf">Paper (PDF)</a>
+      <a href="https://github.com/synchopate/llama-modchip">Runtime (GitHub)</a>
+      <a href="https://huggingface.co/collections/Synchopate/maxq-zero-gpu-frontier-fleet-v311-6afb6e2d63dfd573b4b1a95f">Models (HF)</a>
+      <a href="#hardware">Wanted Silicon</a>
+      <a href="#contact">Contact</a>
+    </div>
+  </nav>
+
+  <header class="hero">
+    <div class="eyebrow">llama-modchip v3.1.1 · Apache 2.0 · Zero-GPU Frontier AI</div>
+    <h1>Frontier 30B–284B MoE models on 16–64 GB CPUs. Zero GPU.</h1>
+    <p class="lead">
+      Hardware-aware inference uniting 100% donor-free <code>MaxQ</code> compression, a zero-collision multi-ISA
+      <code>ggml</code> ABI (<code>41..45</code>), zero-copy 3D MoE <code>--repack</code>, and
+      <code>RouteCrack 2.0</code> — an 832-byte L1-resident SIMD Micro-Arbiter for unified speculative decoding.
+    </p>
+    <div class="cta-row">
+      <a class="btn primary" href="posts/zero-gpu-frontier-ai/">Read Technical Essay</a>
+      <a class="btn" href="paper/llama-modchip-paper.pdf">Technical Paper (PDF)</a>
+      <a class="btn" href="https://github.com/synchopate/llama-modchip">GitHub (v3.1.1)</a>
+      <a class="btn" href="https://huggingface.co/collections/Synchopate/maxq-zero-gpu-frontier-fleet-v311-6afb6e2d63dfd573b4b1a95f">Hugging Face Fleet</a>
+    </div>
+
+    <div class="kpi-grid">
+      <div class="kpi">
+        <div class="kpi-val green">3.4325 PPL</div>
+        <div class="kpi-lbl">Qwen3.8 176.5B MaxQ-64GB · <strong>-46.6% KLD</strong> vs 54.4 GiB IQ1_M</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-val">26.91 GiB</div>
+        <div class="kpi-lbl">Qwen3.8 MaxQ-32GB peak RSS (&le; 28.5 GiB Cgroup v2, Swap=0)</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-val green">15.34 / 21.38 t/s</div>
+        <div class="kpi-lbl">Qwen3.8 aligned avg / peak CPU decode (16C Zen 5, 0 GPU)</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-val">832 Bytes</div>
+        <div class="kpi-lbl">RouteCrack 2.0 L1 Micro-Arbiter (13 cache lines, AVX-512/NEON)</div>
+      </div>
+    </div>
+
+    <div style="margin-top: 28px; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; background: var(--surface);">
+      <video controls autoplay muted loop playsinline style="width: 100%; display: block;">
+        <source src="assets/zero_gpu_demo_15s.mp4" type="video/mp4">
+      </video>
+    </div>
+  </header>
+
+  <section id="quickstart">
+    <h2>60-Second Verification</h2>
+    <p>
+      Every benchmark on this page is reproducible from pinned SHA-256 artifacts using prebuilt static Linux
+      <code>x86_64</code> binaries (<code>GLIBC &le; 2.30</code>, zero external OpenMP <code>.so</code>), macOS Apple
+      Silicon Metal builds, or Windows 11 builds.
+    </p>
+<pre><code>git clone https://github.com/synchopate/llama-modchip.git
+cd llama-modchip
+./modchip setup    # Auto-detects 16/32/64 GB RAM + CPU ISA, verifies SHA-256
+./modchip bench    # Runs reproducible 2-stage CPU &amp; RouteCrack 2.0 scorecard</code></pre>
+  </section>
+
+  <section id="benchmarks">
+    <h2>Three-Tier Aligned MaxQ Fleet (16 GB · 32 GB · 64 GB)</h2>
+    <p>
+      We ship a two-track publication model: <strong>Universal Standard <code>ggml</code></strong> checkpoints run
+      unmodified on Ollama, LM Studio, <code>llama.cpp</code>, Apple Metal, and CUDA; <strong>Modchip Editions</strong>
+      eliminate 2-bit MoE blocks with native <code>FRACTAL_64</code> (3.75 bpw, 17.75 dB SQNR) and
+      <code>LUT-VQ3-64</code> (3.00 bpw) AVX-512 / NEON / Metal kernels.
+    </p>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>RAM Tier</th>
+            <th>Aligned Checkpoint</th>
+            <th>Format Track</th>
+            <th>Disk / Peak RSS</th>
+            <th>Blind PPL / KLD</th>
+            <th>Verified Speed (0 GPU / Metal)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>64 GB</strong></td>
+            <td><a href="https://huggingface.co/Synchopate/Qwen3.8-Flash-Next-MaxQ-64GB-GGUF">Qwen3.8-Flash-Next-MaxQ-64GB</a><br><small>176.5B total · 5B active · blk.48 MTP</small></td>
+            <td><span class="tag std">Std ggml &le;42</span></td>
+            <td>53.99 GiB<br><small>45.08 GiB VmHWM</small></td>
+            <td><strong>3.4325</strong><br><small>0.4971 KLD</small></td>
+            <td><strong>15.34 avg / 21.38 peak t/s</strong><br><small>16C Zen 5, RouteCrack 2.0</small></td>
+          </tr>
+          <tr>
+            <td><strong>64 GB</strong></td>
+            <td><a href="https://huggingface.co/Synchopate/DeepSeek-V4-Flash-0731-MaxQ-v4-64GB-CPU-GGUF">DeepSeek-V4-Flash-0731-MaxQ-v4</a><br><small>284.3B total · 13.2B active</small></td>
+            <td><span class="tag std">Std ggml (0 custom)</span></td>
+            <td>57.99 GiB<br><small>58.7–59.1 GiB RSS</small></td>
+            <td><strong>6.8592</strong><br><small>0.6485 KLD</small></td>
+            <td><strong>7.79 avg / 12.31 peak t/s</strong> CPU<br><small><strong>27.0 t/s</strong> Apple M5 Max</small></td>
+          </tr>
+          <tr>
+            <td><strong>32 GB</strong></td>
+            <td><a href="https://huggingface.co/Synchopate/Qwen3.8-Flash-Next-MaxQ-32GB-GGUF">Qwen3.8-Flash-Next-MaxQ-32GB</a><br><small>24.98 GiB RAM + 10.73 GiB lazy NVMe PLE</small></td>
+            <td><span class="tag std">Std ggml &le;42</span></td>
+            <td>35.71 GiB<br><small><strong>26.91 GiB</strong> (&le;28.5)</small></td>
+            <td><strong>5.8120</strong><br><small>1.0069 KLD</small></td>
+            <td><strong>11.45 – 14.29 t/s</strong><br><small>Cgroup v2 Swap=0 verified</small></td>
+          </tr>
+          <tr>
+            <td><strong>16 GB</strong></td>
+            <td><a href="https://huggingface.co/Synchopate/NVIDIA-Nemotron-3.5-30B-A3B-MaxQ-16GB-GGUF">Nemotron-3.5-30B-MaxQ-16GB</a><br><small>30.2B total · 3B active · Mamba-2 + MoE</small></td>
+            <td><span class="tag std">Universal Std ggml</span></td>
+            <td>13.39 GiB<br><small>14.30 GiB (&le;15.0)</small></td>
+            <td><strong>7.3129</strong><br><small>0.1722 KLD</small></td>
+            <td><strong>27.80 t/s</strong> refactor<br><small>Ollama, LM Studio, llama.cpp</small></td>
+          </tr>
+          <tr>
+            <td><strong>16 GB</strong></td>
+            <td><a href="https://huggingface.co/Synchopate/NVIDIA-Nemotron-3.5-30B-A3B-Fractal-64-CPU-GGUF">Nemotron-3.5-30B-Fractal-64</a><br><small>All 46 MoE tensors FRACTAL_64, 0 Q2_0</small></td>
+            <td><span class="tag mod">Modchip Type 44</span></td>
+            <td>14.36 GiB<br><small>15.4 GiB RSS</small></td>
+            <td><strong>6.6533</strong><br><small><strong>0.0688 KLD</strong></small></td>
+            <td><strong>28.20 avg / 42.18 peak t/s</strong><br><small>78.6 t/s M3 Max · 111.6 t/s TR</small></td>
+          </tr>
+          <tr>
+            <td><strong>16 GB</strong></td>
+            <td><a href="https://huggingface.co/Synchopate/NVIDIA-Nemotron-3.5-30B-A3B-VQ3-64-CPU-GGUF">Nemotron-3.5-30B-VQ3-64</a><br><small>LUT-VQ3-64 + FRACTAL_64 CPU-Turbo</small></td>
+            <td><span class="tag mod">Modchip 44/45</span></td>
+            <td>13.30 GiB<br><small>14.3 GiB RSS</small></td>
+            <td><strong>6.7614</strong><br><small>0.0871 KLD</small></td>
+            <td><strong>28.20 avg / 54.43 t/s</strong> 9960X<br><small>100/100 Functional Gate</small></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <figure>
+      <img src="assets/fig2_pareto_frontier.png" alt="Pareto frontier across Qwen3.8, DeepSeek-V4 284B, and Nemotron-3.5 30B">
+      <figcaption>
+        <strong>Figure 1 — Disk Footprint vs. Blind Perplexity Pareto Frontier.</strong>
+        Zero-overlap <code>wiki-alt.txt</code> evaluations across all three RAM tiers. On Qwen3.8-Flash-Next,
+        MaxQ-64GB cuts KLD by 46.6% vs 54.40 GiB IQ1_M while preserving all 512/512 experts and the blk.48 NextN MTP head;
+        MaxQ-32GB is the only published checkpoint fitting under a strict 28.5 GiB Cgroup v2 ceiling with Swap=0.
+      </figcaption>
+    </figure>
+
+    <figure>
+      <img src="assets/fig3_routecrack2_speedup.png" alt="RouteCrack 2.0 head-to-head throughput across W1-W4 workloads">
+      <figcaption>
+        <strong>Figure 2 — RouteCrack 2.0 Speculative Throughput Across 3 Flagship Architectures (16C Zen 5, 0 GPU).</strong>
+        W1 (152-LOC refactor), W2 (multi-tool JSON), W3 (greenfield C99), W4 (bilingual prose), and aggregate tok/s
+        at T=0. Includes honest trade-offs: W4 free prose on non-MTP 284B DeepSeek-V4 runs -7.4% vs N=1 while aggregate
+        rises +14.5% (+90.0% on W1).
+      </figcaption>
+    </figure>
+  </section>
+
+  <section id="hardware">
+    <h2>Wanted Hardware Runs</h2>
+    <p>
+      Community members have already verified <code>llama-modchip</code> on Zen 5, Threadripper PRO 7985WX (111.62 t/s),
+      Apple M5 Max (27.0 t/s on 284B), AWS Graviton3 (44.97 t/s), and Dual Broadwell Xeon. We are actively looking for
+      reproducible <code>./modchip bench</code> scorecards on three missing server/cloud silicon tiers:
+    </p>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Target Silicon</th><th>Memory / ISA</th><th>Target Workloads</th><th>Submit</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>AMD EPYC 9005 Turin</strong> <span class="tag wanted">Wanted</span></td>
+            <td>64–192C Zen 5 · AVX-512 VBMI · 12-Ch DDR5-6000</td>
+            <td><code>--preset qwen38-64gb</code> &amp; <code>--preset dsv4-maxq</code></td>
+            <td><a href="https://github.com/synchopate/llama-modchip/issues/new?template=cpu_benchmark_submission.yml">Submit Scorecard</a></td>
+          </tr>
+          <tr>
+            <td><strong>Intel Xeon 6 Granite Rapids</strong> <span class="tag wanted">Wanted</span></td>
+            <td>64–128C · AVX-512 / AMX · 8–12-Ch DDR5 / MRDIMM</td>
+            <td><code>--preset qwen38-64gb</code> &amp; <code>--preset dsv4-maxq</code></td>
+            <td><a href="https://github.com/synchopate/llama-modchip/issues/new?template=cpu_benchmark_submission.yml">Submit Scorecard</a></td>
+          </tr>
+          <tr>
+            <td><strong>AWS Graviton4 / AmpereOne</strong> <span class="tag wanted">Wanted</span></td>
+            <td>16–192C ARM64 Neoverse-V2 / SVE2 · 12-Ch DDR5</td>
+            <td><code>--preset nemotron-vq3</code> &amp; <code>--preset qwen38-64gb</code></td>
+            <td><a href="https://github.com/synchopate/llama-modchip/issues/new?template=cpu_benchmark_submission.yml">Submit Scorecard</a></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="open-problems">
+    <h2>Open Research Problems (2026–2027)</h2>
+    <ul>
+      <li><strong>Sub-2-Bit Donor-Free Compression for 500B–1T MoE on 128 GB CPUs:</strong> Extending coupled FP64 Woodbury DualGram + PCA-Wiener subspace folding so trillion-parameter sparse checkpoints remain loop-free on multi-channel DDR5 hosts without donor transcoding.</li>
+      <li><strong>Hardware-Adaptive L1 Arbiters for Hybrid SSM + GQA Architectures:</strong> Online calibration of the 832-byte micro-arbiter directly against per-socket DRAM bandwidth counters and active-expert fanout.</li>
+      <li><strong>Zero-Copy PCIe Gen5 Demand-Paged Embeddings &amp; Experts:</strong> Deterministic <code>io_uring</code> prefetching of ultra-large per-layer embedding tables under tight 16–32 GB Cgroup v2 budgets.</li>
+    </ul>
+  </section>
+
+  <section id="contact">
+    <h2>Contact &amp; Collaboration</h2>
+    <p>
+      This is an independent, non-commercial systems research effort. All runtime patches, kernels, and evaluation
+      harnesses are published under Apache 2.0 on <a href="https://github.com/synchopate/llama-modchip">GitHub</a>.
+      For hardware benchmark collaboration, silicon testing, or technical discussion:
+    </p>
+    <p>
+      <code>synchopate@gmail.com</code> &middot;
+      <a href="https://github.com/synchopate">github.com/synchopate</a> &middot;
+      <a href="https://huggingface.co/Synchopate">huggingface.co/Synchopate</a>
+    </p>
+  </section>
+
+  <footer>
+    <span>Synchopate · Zero-GPU Frontier AI</span>
+    <span>Runtime: Apache 2.0 · Benchmarks: v3.1.1 verified</span>
+  </footer>
+</div>
+</body>
+</html>

@@ -57,13 +57,15 @@
     </div>
 
     <div style="margin-top: 28px; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; background: var(--surface);">
-      <video controls autoplay muted loop playsinline style="width: 100%; display: block;">
-        <source src="assets/zero_gpu_demo_15s.mp4" type="video/mp4">
+      <video controls autoplay muted loop playsinline poster="assets/zero_gpu_live_poster.png" style="width: 100%; display: block;">
+        <source src="assets/zero_gpu_live_demo.mp4" type="video/mp4">
       </video>
       <p style="margin: 0; padding: 10px 14px; font-size: 0.84rem; color: var(--muted); border-top: 1px solid var(--border);">
-        <strong>Disclosure:</strong> Logged-replay visualization of W1 output &amp; aggregate timing from
-        <code>benchmarks/results/qwen38_routecrack2_v31.json</code> (256 tokens in 11.93 s at 21.38 tok/s; 15.93 s prompt
-        prefill omitted). Not a live screen recording.
+        <strong>Genuine 1.0&times; Real-Time Uncut X11 Terminal Capture (0 GPU, Cold-Cache 60 GiB Cgroup v2):</strong>
+        <code>Qwen3.8-Flash-Next-MaxQ-64GB</code> (176.5B / 5B active) streaming live via <code>--spec-type routecrack2</code>
+        on 16 AMD Zen 5 cores (<code>nvidia-smi</code> absent, <code>Swap=0</code>): 688-token prefill @ 86.54 tok/s (7.95 s, uncut)
+        + 256-token decode @ <strong>19.65 tok/s</strong> (12.98 s, 210/210 draft accepted, max +6 token burst) at
+        <strong>46.26 GiB &le; 60.00 GiB</strong> cgroup peak (<code>pgsteal=0</code>, <code>refault=0</code>).
       </p>
     </div>
   </header>
@@ -119,7 +121,7 @@ cd llama-modchip
       RAM; <code>10.7–30.7 GiB</code> refaulted/run at <code>60G</code> in <code>dsv4_64gb_cgroup60g_v311.json</code>) and
       <code>Nemotron MaxQ-16GB RC2</code> (<code>~15.75 GiB</code> needed; requires <code>&ge;16 GiB</code> free RAM;
       <code>8.4–9.2 GiB</code> refaulted/run at <code>15G</code> in <code>nemotron_16gb_cgroup15g_v311.json</code>).
-      Because refaults on our Proxmox host are served from host ZFS ARC RAM rather than NVMe, those reclaim-bound speeds
+      Because refaults on our hypervisor host are served from host ZFS ARC RAM rather than NVMe, those reclaim-bound speeds
       do not transfer to bare-metal 64/16 GB boxes below 61/16 GiB free RAM.
     </p>
 

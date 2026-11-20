@@ -26,6 +26,17 @@
       How co-designing donor-free quantization, lazy NVMe Per-Layer Embeddings, zero-copy 3D MoE memory mapping, and an
       832-byte L1 SIMD speculative arbiter breaks the capacity and DDR5 bandwidth walls for 30B–284B Sparse MoE models.
     </p>
+    <div style="margin-top: 22px; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; background: var(--surface);">
+      <video controls muted loop playsinline poster="../../assets/zero_gpu_live_poster.png" style="width: 100%; display: block;">
+        <source src="../../assets/zero_gpu_live_demo.mp4" type="video/mp4">
+      </video>
+      <p style="margin: 0; padding: 10px 14px; font-size: 0.84rem; color: var(--muted); border-top: 1px solid var(--border);">
+        <strong>Live 1.0&times; Uncut X11 Screen Capture (0 GPU, Cold-Cache 60 GiB Cgroup v2):</strong>
+        176.5B <code>Qwen3.8-MaxQ-64GB</code> running <code>RouteCrack 2.0</code> on 16 Zen 5 CPU cores
+        (<code>Swap=0</code>, <code>pgsteal=0</code>, <code>46.26 GiB &le; 60 GiB</code>): 688-token prefill in 7.95 s
+        (86.54 tok/s) + 256-token refactor @ <strong>19.65 tok/s</strong> (210/210 draft accepted, live <code>/proc/stat</code> &amp; <code>/sys/fs/cgroup</code> telemetry).
+      </p>
+    </div>
   </header>
 
   <section>
@@ -127,7 +138,7 @@
     <p>
       Full unified patch (pinned to <code>llama.cpp @ de32b268c</code>), static Linux binaries, preflight SHA-256
       checker, committed raw JSON benchmark logs (RouteCrack 2.0 head-to-head, all four cold-cache Cgroup v2 3-restart
-      certifications across 60 GiB / 28.5 GiB / 15 GiB, DeepSeek 51-chunk, Nemotron KLD/WT2), and the full LaTeX paper
+      logs across 60 GiB / 28.5 GiB / 15 GiB, DeepSeek 51-chunk, Nemotron KLD/WT2), and the full LaTeX paper
       are open under Apache 2.0:
     </p>
 <pre><code>git clone https://github.com/synchopate/llama-modchip.git

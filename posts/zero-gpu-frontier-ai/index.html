@@ -61,9 +61,9 @@
       <code>MemorySwapMax=0</code>):
     </p>
     <ul>
-      <li><strong>PCA-Wiener + RaBitQ <code>Q1_0</code> PLE Folding:</strong> Compressing Qwen3.8's 320M-row PLE table from 26.82 GiB down to <strong>10.73 GiB</strong> frees +16.09 GiB for all 512/512 unpruned routed experts plus the 0.81 GiB <code>blk.48</code> NextN MTP head. On blind <code>wiki-alt.txt</code> (40&times;512 chunks, 0.000% n-gram overlap), <code>Qwen3.8 MaxQ-64GB</code> (53.99 GiB, 45.08 GiB VmHWM, verified under a strict 60.0 GiB Cgroup v2 <code>Swap=0</code> limit) hits <strong>3.4325 PPL / 0.4971 KLD</strong> — beating 54.40 GiB <code>ISTA-DASLab GSQ-RCO-Coder-IQ1_M</code> (5.0916 PPL / 0.9302 KLD) by <strong>-46.6% KLD</strong> and +8.93 pp Top-1 agreement. <em>(Disclosure: <code>GSQ-RCO-Coder-IQ1_M</code> is the only published third-party &le;55.5 GiB checkpoint and is coder-tuned with 256/512 experts pruned, so Wikipedia text naturally penalizes coder-specialized pruning relative to unpruned general-domain <code>MaxQ-64GB</code>.)</em></li>
-      <li><strong>Cgroup v2 32 GB Proof (Swap=0):</strong> Pairing 42-layer <code>ConeCollapse</code> intermediate width pruning (K=640&rarr;512 with exact post-quantization F32 <code>ffn_down_exps.bias</code> centroid compensation, requiring <code>llama-modchip v3.1.1+</code>) with lazy NVMe <code>mmap</code> paging of Shard 2 keeps <code>Qwen3.8 MaxQ-32GB</code> at <strong>27.44 GiB peak VmHWM</strong> (26.91–27.44 GiB range) inside a strict 28.5 GiB Cgroup v2 cage (<code>MemorySwapMax=0</code>, trading perplexity to 5.8120 PPL / 1.0069 KLD to fit 32 GB RAM). Inward 2 MiB alignment on <code>MADV_HUGEPAGE</code> prevents the kernel from pre-faulting lazy PLE pages.</li>
-      <li><strong>FP64 Woodbury DualGram &amp; Standard-Type DeepSeek-V4 284B:</strong> Instead of inverting ill-conditioned 2048&times;2048 Hessians across 256–512 experts per layer, the Woodbury identity turns Hessian refitting into a well-conditioned N<sub>C</sub>&times;N<sub>C</sub> FP64 Cholesky dual solve (observed &kappa;<sub>2</sub> &le; 86.33). The resulting 57.99 GiB <code>DeepSeek-V4 MaxQ-v4</code> uses <strong>zero custom tensor types</strong> (34L ConeCollapse <code>K=1792</code> + <code>ffn_down_exps.bias</code> via <code>llama-modchip v3.1.1+</code>), hitting <strong>6.8592 PPL</strong> (51-chunk <code>wiki-alt.txt</code>) and <strong>7.79 agg / 12.31 W1 tok/s</strong> on 16C Zen 5 CPU. <em>(Note: our earlier 27.0 tok/s Apple M5 Max benchmark was measured on the withdrawn 56.56 GiB <code>Fractal</code> build, not <code>MaxQ-v4</code>; <code>MaxQ-v4</code> awaits fresh M5 Max numbers.)</em></li>
+      <li><strong>PCA-Wiener + RaBitQ <code>Q1_0</code> PLE Folding:</strong> Compressing Qwen3.8's 320M-row PLE table from 26.82 GiB down to <strong>10.73 GiB</strong> frees +16.09 GiB for all 512/512 unpruned routed experts plus the 0.81 GiB <code>blk.48</code> NextN MTP head. On blind <code>wiki-alt.txt</code> (40&times;512 chunks, 0.000% n-gram overlap), <code>Qwen3.8 MaxQ-64GB</code> (53.99 GiB; certified at 48.09 GiB VmHWM / <strong>48.35 GiB cold-cache cgroup peak &le; 60.0 GiB</strong>, <code>pgsteal=0</code>, <code>Swap=0</code> in <code>qwen38_64gb_cgroup60g_v311.json</code>) hits <strong>3.4325 PPL / 0.4971 KLD</strong> — beating 54.40 GiB <code>ISTA-DASLab GSQ-RCO-Coder-IQ1_M</code> (5.0916 PPL / 0.9302 KLD) by <strong>-46.6% KLD</strong> and +8.93 pp Top-1 agreement. <em>(Disclosure: <code>GSQ-RCO-Coder-IQ1_M</code> is the only published third-party &le;55.5 GiB checkpoint and is coder-tuned with 256/512 experts pruned, so Wikipedia text naturally penalizes coder-specialized pruning relative to unpruned general-domain <code>MaxQ-64GB</code>.)</em></li>
+      <li><strong>Cold-Cache Cgroup v2 32 GB Proof (Swap=0, &gt;10.5 GiB PLE Unfaulted):</strong> Pairing 42-layer <code>ConeCollapse</code> intermediate width pruning (K=640&rarr;512 with exact post-quantization F32 <code>ffn_down_exps.bias</code> centroid compensation, requiring <code>llama-modchip v3.1.1+</code>) with lazy NVMe <code>mmap</code> paging of Shard 2 passes cold-cache Linux Cgroup v2 (<code>drop_caches=3</code>, guest <code>Cached=0.3 GiB</code>, <code>MemoryMax=28.5G</code>, <code>MemorySwapMax=0</code>, <code>-c 32768</code>, <code>qwen38_32gb_cgroup28g_v311.json</code>) at <strong>28.08 GiB VmHWM / 28.26 GiB cgroup peak</strong> (26.11 / 26.79 GiB N=1; <strong><code>pgsteal=0</code>, <code>cg.file=25.14 GiB</code> out of 35.71 GiB on disk</strong> — proving &gt;10.5 GiB of PLE stays unfaulted; <code>14.58 &plusmn; 0.32 tok/s</code> RC2 vs <code>10.00 &plusmn; 0.01</code> N=1 across 3 independent cold restarts, trading quality to 5.8120 PPL / 1.0069 KLD to fit 32 GB RAM). Inward 2 MiB alignment on <code>MADV_HUGEPAGE</code> prevents the kernel from pre-faulting lazy PLE pages.</li>
+      <li><strong>FP64 Woodbury DualGram &amp; Cold-Cache 60 GiB DeepSeek-V4 284B:</strong> Instead of inverting ill-conditioned 2048&times;2048 Hessians across 256–512 experts per layer, the Woodbury identity turns Hessian refitting into a well-conditioned N<sub>C</sub>&times;N<sub>C</sub> FP64 Cholesky dual solve (observed &kappa;<sub>2</sub> &le; 86.33). The resulting 57.99 GiB <code>DeepSeek-V4 MaxQ-v4</code> uses <strong>zero custom tensor types</strong> (34L ConeCollapse <code>K=1792</code> + <code>ffn_down_exps.bias</code> via <code>llama-modchip v3.1.1+</code>), hitting <strong>6.8592 PPL</strong> (51-chunk <code>wiki-alt.txt</code>), <strong>7.79 agg / 12.31 W1 tok/s</strong> uncapped, and passing cold-cache <strong>60.0 GiB Cgroup v2 (<code>Swap=0</code>, <code>oom_kill=0</code>)</strong> at <strong>8.88 &plusmn; 0.25 tok/s</strong> (16.14 W1; 59.73 GiB VmHWM / 60.00 GiB cg.peak in <code>dsv4_64gb_cgroup60g_v311.json</code> via clean file-page reclaim; note ZFS host ARC refault caveat). <em>(Note: our earlier 27.0 tok/s Apple M5 Max benchmark was measured on the withdrawn 56.56 GiB <code>Fractal</code> build, not <code>MaxQ-v4</code>; <code>MaxQ-v4</code> awaits fresh M5 Max numbers.)</em></li>
       <li><strong>Zero-Collision ABI (41..45) &amp; Custom CPU Kernels:</strong> Upstream types 41–43 stay untouched while <code>FRACTAL_64 = 44</code> (3.75 bpw, 17.75 dB SQNR) and <code>LUT-VQ3-64 = 45</code> (3.00 bpw spherical Lloyd-Max 3D codebook decoded in-register via AVX-512 VBMI <code>VPERMI2B</code>) sit cleanly at 44/45 with AVX2, ARM64 NEON, and Apple Metal fallbacks.</li>
     </ul>
 
@@ -78,9 +78,15 @@
   <section>
     <h2>3. RouteCrack 2.0 &amp; the 832-Byte L1 Micro-Arbiter</h2>
     <p>
-      On DDR5-bound Sparse MoE models, drafting token <em>t<sub>d</sub></em> is profitable only when expected accepted yield
-      <code>R(d+1) &gt; &kappa; &middot; R(d)</code> under a conservatism guard (&kappa; &ge; 1.03), where
-      <code>R(k) = E[A<sub>k</sub>] / (C(k) + C<sub>draft</sub>)</code>.
+      On DDR5-bound Sparse MoE models, drafting token <em>t<sub>d</sub></em> adds marginal cycle cost
+      <code>&Delta;C<sub>d</sub> = C<sub>tot</sub>(d+1) &minus; C<sub>tot</sub>(d)</code>, where
+      <code>C<sub>tot</sub>(k) = C<sub>batch</sub>(k) + n<sub>mtp</sub>(k)&middot;C<sub>mtp</sub> + 1<sub>k&gt;0</sub>&middot;C<sub>rb</sub>&middot;(1 &minus; p<sub>surv,k</sub>)</code>
+      (<code>C<sub>batch</sub>(0) = 1.035</code> on MTP profiles, <code>1.000</code> on draftless profiles) and
+      <code>R(k) = E[A<sub>k</sub>] / C<sub>tot</sub>(k)</code>. In <code>rc_arbiter_l1.h</code>, the conservatism
+      guard <code>&kappa; &isin; [1.0376, 1.0844]</code> scales only the marginal cost increment <code>&Delta;C<sub>d</sub></code>,
+      admitting <em>t<sub>d</sub></em> iff
+      <code>E[A<sub>d+1</sub>] / (C<sub>tot</sub>(d) + &kappa;&middot;&Delta;C<sub>d</sub>) &gt; R(d)</code>
+      (equivalently <code>p<sub>surv,d+1</sub> / &Delta;C<sub>d</sub> &gt; &kappa;&middot;R(d)</code> for <code>&Delta;C<sub>d</sub> &gt; 0</code>).
       <code>RouteCrack 2.0</code> (<code>--spec-type routecrack2</code>) solves this with three unified phases:
     </p>
     <ol>
@@ -92,11 +98,13 @@
     <figure>
       <img src="../../assets/fig3_routecrack2_speedup.png" alt="RouteCrack 2.0 per-workload speedup">
       <figcaption>
-        Head-to-head throughput at T=0 on 16 Zen 5 cores (0 GPU, 74.0 GiB container): Qwen3.8 aligned rises +77.0% vs N=1
-        (15.34 agg / 21.38 W1 refactor tok/s, +10.1% vs v3.0 draft-mtp; 5-rep 60 GiB Cgroup v2 Swap=0 verification in
-        <code>qwen38_64gb_cgroup60g_v311.json</code> records 8.65&plusmn;0.07 t/s N=1 vs 14.54 cold rep-1 /
-        15.72&plusmn;0.89 t/s 5-rep persistent-TT RC2 at 46.89 GiB VmHWM); Nemotron-30B (<code>Fractal-MXFP4</code> ref)
-        reaches 28.20 agg / 42.18 W1 tok/s; DeepSeek-V4 284B hits 7.79 agg / 12.31 W1 tok/s.
+        Head-to-head uncapped throughput at T=0 on 16 Zen 5 cores (0 GPU, 74.0 GiB container): Qwen3.8 aligned rises +77.0% vs N=1
+        (15.34 agg / 21.38 W1 refactor tok/s, +10.1% vs v3.0 draft-mtp; separate cold-cache 60 GiB Cgroup v2 Swap=0 3-restart
+        verification in <code>qwen38_64gb_cgroup60g_v311.json</code> records 8.78&plusmn;0.02 t/s N=1 vs 15.64&plusmn;0.05 t/s
+        RC2 [W1 22.00&plusmn;0.19] at 48.35 GiB cold cgroup peak, <code>pgsteal=0</code>); Nemotron-30B
+        (<code>Fractal-MXFP4</code> ref) reaches 28.20 agg / 42.18 W1 tok/s (universal <code>MaxQ-16GB</code> cold 15 GiB
+        cgroup: 26.28&plusmn;0.19 agg / 43.53 W1); DeepSeek-V4 284B hits 7.79 agg / 12.31 W1 uncapped (cold 60 GiB cgroup:
+        8.88&plusmn;0.25 agg / 16.14 W1).
       </figcaption>
     </figure>
   </section>
@@ -107,8 +115,8 @@
       <strong>What does NOT win everywhere (verified numbers, no cherry-picking):</strong>
       <ul>
         <li><strong>High-entropy prose on 284B non-MTP MoE &amp; single-run parity vs v3.0:</strong> On <code>DeepSeek-V4 MaxQ-v4</code>, free bilingual prose (W4) runs <strong>-7.4% slower</strong> than pure N=1 (6.49 vs 7.01 tok/s) because 256-expert DDR5 pull cost dominates whenever context n-grams miss (aggregate still wins +14.5% thanks to +90.0% on W1 refactor). Furthermore, aggregate <code>RouteCrack 2.0</code> deltas over v3.0 <code>ngram-map-k</code> on non-MTP models (+0.84% DeepSeek, +3.96% Nemotron) fall within single-run variance; the main non-MTP benefit is eliminating W2 JSON mode-bleed divergence and lifting Nemotron W2 by +10.5%.</li>
-        <li><strong>Greedy T=0 batch-FP drift on high-entropy workloads:</strong> All speculative methods (including upstream <code>MTP-1</code> and <code>draft-mtp</code>) are 100% bit-exact vs N=1 on structured W1+W2 (Qwen3.8 254/254, DeepSeek 191/191, Nemotron 255/255), but exhibit batch-GEMM vs GEMV FP32 rounding drift at near-tied logits on high-entropy W3/W4 (common prefix: Qwen3.8 RC2 4/254 W3, 48/254 W4; DeepSeek 34/191 W3, 48/191 W4; Nemotron 17/253 W3, 173/255 W4).</li>
-        <li><strong>Loader &amp; kernel portability:</strong> Only <code>Nemotron MaxQ-16GB</code> is verified unmodified on stock Ollama / LM Studio / upstream <code>llama.cpp</code>. <code>Qwen3.8 MaxQ-64GB</code> uses standard types (&le;42) and requires <code>--no-repack</code> on unpatched upstream <code>llama.cpp</code>. <code>Qwen3.8 MaxQ-32GB</code> and <code>DeepSeek-V4 MaxQ-v4</code> use zero custom tensor types but require the <code>llama-modchip v3.1.1+</code> loader for ConeCollapse <code>ffn_down_exps.bias</code>. Custom <code>FRACTAL_64</code> (44) supports CPU + Apple Metal and <code>VQ3_64</code> (45) supports CPU SIMD only (no CUDA/Vulkan).</li>
+        <li><strong>Greedy T=0 parity &amp; high-entropy drift:</strong> <code>RouteCrack 2.0</code> (across all three models: Qwen3.8 254/254, DeepSeek 191/191, Nemotron 255/255) and <code>MTP-1</code> / <code>draft-mtp</code> (evaluated on Qwen3.8) are 100% bit-exact vs N=1 on structured W1+W2, whereas v3.0 <code>ngram-map-k</code> diverged on W2 (DeepSeek 120/191, Nemotron 57/255). On high-entropy W3/W4, all speculative methods diverge from N=1 at near-tied logits, which we attribute to batched GEMM vs. GEMV FP32 accumulation order (not yet isolated with a deterministic-reduction kernel; common prefix: Qwen3.8 RC2 4/254 W3, 48/254 W4; DeepSeek 34/191 W3, 48/191 W4; Nemotron 17/253 W3, 173/255 W4).</li>
+        <li><strong>Loader &amp; kernel portability:</strong> Only <code>Nemotron MaxQ-16GB</code> uses standard <code>ggml</code> types (&le;42, zero custom types, zero ConeCollapse bias) for unmodified execution on upstream <code>llama.cpp</code> (<code>de32b268c+</code>) and downstream runners supporting <code>GGML_TYPE_Q2_0 = 42</code>. <code>Qwen3.8 MaxQ-64GB</code> uses standard types (&le;42) and requires <code>--no-repack</code> on unpatched upstream <code>llama.cpp</code>. <code>Qwen3.8 MaxQ-32GB</code> and <code>DeepSeek-V4 MaxQ-v4</code> use zero custom tensor types but require the <code>llama-modchip v3.1.1+</code> loader for ConeCollapse <code>ffn_down_exps.bias</code>. Custom <code>FRACTAL_64</code> (44) supports CPU + Apple Metal and <code>VQ3_64</code> (45) supports CPU SIMD only (no CUDA/Vulkan).</li>
         <li><strong>Greedy T=0 on 1.63 bpw 32 GB tier:</strong> At ultra-low effective bitwidth on <code>MaxQ-32GB</code>, greedy decoding can enter tail loops on long generations; standard sampling (<code>--temp 0.6 --top-p 0.95 --top-k 20 --presence-penalty 0.2 --repeat-penalty 1.05</code>, automated by <code>./modchip</code>) restores clean loop-free output.</li>
       </ul>
     </div>
@@ -118,8 +126,9 @@
     <h2>5. Reproducing Everything</h2>
     <p>
       Full unified patch (pinned to <code>llama.cpp @ de32b268c</code>), static Linux binaries, preflight SHA-256
-      checker, committed raw JSON benchmark logs (RouteCrack 2.0, 60 GiB Cgroup v2 variance, DeepSeek 51-chunk, Nemotron
-      KLD/WT2), and the full LaTeX paper are open under Apache 2.0:
+      checker, committed raw JSON benchmark logs (RouteCrack 2.0 head-to-head, all four cold-cache Cgroup v2 3-restart
+      certifications across 60 GiB / 28.5 GiB / 15 GiB, DeepSeek 51-chunk, Nemotron KLD/WT2), and the full LaTeX paper
+      are open under Apache 2.0:
     </p>
 <pre><code>git clone https://github.com/synchopate/llama-modchip.git
 cd llama-modchip

@@ -43,12 +43,12 @@
         <div class="kpi-lbl">Qwen3.8 176.5B MaxQ-64GB · <strong>-46.6% KLD</strong> vs 54.4 GiB coder-pruned IQ1_M</div>
       </div>
       <div class="kpi">
-        <div class="kpi-val">27.44 GiB</div>
-        <div class="kpi-lbl">Qwen3.8 MaxQ-32GB peak VmHWM (26.91–27.44 &le; 28.5 GiB Cgroup v2, Swap=0)</div>
+        <div class="kpi-val">28.26 GiB</div>
+        <div class="kpi-lbl">Qwen3.8 MaxQ-32GB cold-cache Cgroup v2 peak (&le;28.5 GiB, Swap=0, &gt;10.5 GiB PLE unfaulted)</div>
       </div>
       <div class="kpi">
-        <div class="kpi-val green">15.34 / 21.38 t/s</div>
-        <div class="kpi-lbl">Qwen3.8 aligned 4-WL agg / W1 refactor (16C Zen 5, 0 GPU)</div>
+        <div class="kpi-val green">15.64 / 22.00 t/s</div>
+        <div class="kpi-lbl">Qwen3.8 MaxQ-64GB cold 60 GiB cgroup (3 cold reps; 15.34 / 21.38 uncapped)</div>
       </div>
       <div class="kpi">
         <div class="kpi-val">832 Bytes</div>
@@ -71,10 +71,12 @@
   <section id="quickstart">
     <h2>60-Second Verification</h2>
     <p>
-      All <code>RouteCrack 2.0</code> throughput benchmarks, 60 GiB Cgroup v2 variance runs, DeepSeek-V4 51-chunk logs, and
-      Nemotron KLD/WT2 evaluations are archived as raw logs in <code>benchmarks/results/</code> and reproducible from pinned
-      SHA-256 artifacts using static Linux <code>x86_64</code> binaries (<code>GLIBC &le; 2.30</code>, zero external OpenMP
-      <code>.so</code>), macOS Apple Silicon Metal builds, or Windows 11 builds.
+      All <code>RouteCrack 2.0</code> throughput benchmarks, all four cold-cache Cgroup v2 3-restart variance logs
+      (<code>60 GiB</code> Qwen3.8 &amp; DeepSeek-V4 284B, <code>28.5 GiB</code> Qwen3.8-32GB, <code>15 GiB</code>
+      Nemotron MaxQ-16GB), DeepSeek-V4 51-chunk logs, and Nemotron KLD/WT2 evaluations are archived as raw logs in
+      <code>benchmarks/results/</code> and reproducible from pinned SHA-256 artifacts using static Linux
+      <code>x86_64</code> binaries (<code>GLIBC &le; 2.30</code>, zero external OpenMP <code>.so</code>), macOS Apple
+      Silicon Metal builds, or Windows 11 builds.
     </p>
 <pre><code>git clone https://github.com/synchopate/llama-modchip.git
 cd llama-modchip
@@ -87,7 +89,8 @@ cd llama-modchip
     <p>
       We ship a two-track publication model with explicit loader compatibility:
       <strong>Standard <code>ggml</code> (<code>&le; 42</code>)</strong> checkpoints avoid custom tensor types
-      (<code>Nemotron MaxQ-16GB</code> runs unmodified on Ollama, LM Studio, and stock <code>llama.cpp</code>;
+      (<code>Nemotron MaxQ-16GB</code> has zero custom types and zero ConeCollapse bias, targeting unmodified upstream
+      <code>llama.cpp</code> <code>de32b268c+</code> and downstream runners supporting <code>GGML_TYPE_Q2_0 = 42</code>;
       <code>Qwen3.8 MaxQ-64GB</code> uses standard types <code>&le; 42</code> and requires <code>--no-repack</code> on
       unpatched upstream <code>llama.cpp</code>; <code>Qwen3.8 MaxQ-32GB</code> and <code>DeepSeek-V4 MaxQ-v4</code> use zero
       custom tensor types for multi-backend portability but require the <code>llama-modchip v3.1.1+</code> loader for
@@ -96,15 +99,27 @@ cd llama-modchip
       and <code>LUT-VQ3-64</code> (3.00 bpw) AVX-512 / NEON / Metal kernels.
     </p>
     <p style="font-size: 0.9rem; color: var(--muted);">
-      <strong>Host &amp; Cgroup Note:</strong> Reference Zen 5 runs execute on a 16-core AMD Ryzen 9 9955HX container with
-      <strong>74.0 GiB RAM</strong> (<code>Swap=0</code>, <code>0 GPU</code>). Tier residency is independently enforced via
-      Linux Cgroup v2 (<code>MemorySwapMax=0</code>): <code>Qwen3.8 MaxQ-64GB</code> verified under <code>60.0 GiB</code> at
-      <code>-c 32768</code> (5-rep <code>N=1</code>: <code>8.65 &plusmn; 0.07 t/s</code>, <code>44.53 GiB</code> VmHWM;
-      <code>RouteCrack 2.0</code>: <code>14.54 t/s</code> cold rep-1 / <code>15.72 &plusmn; 0.89 t/s</code> 5-rep persistent-TT
-      mean, <code>46.89 GiB &le; 60.0 GiB</code> VmHWM, <code>swap.peak=0</code>, <code>oom_kill=0</code> in
-      <code>qwen38_64gb_cgroup60g_v311.json</code>), <code>Qwen3.8 MaxQ-32GB</code> under <code>28.5 GiB</code>, and
-      <code>Nemotron MaxQ-16GB</code> under <code>15.0 GiB</code>. <code>DeepSeek-V4 MaxQ-v4</code> (58.7–59.1 GiB RSS) was
-      measured on the 74.0 GiB container and awaits a dedicated 64 GB cgroup test.
+      <strong>Host &amp; Cold-Cache Cgroup v2 Proof (All 4 Flagships, Swap=0, oom_kill=0):</strong> Reference Zen 5 runs
+      execute on a 16-core AMD Ryzen 9 9955HX Linux container (<strong>74.0 GiB RAM</strong>, <code>Swap=0</code>,
+      <code>0 GPU</code>). Tier residency across all four flagships is independently proven after hypervisor
+      <code>drop_caches=3</code> + <code>POSIX_FADV_DONTNEED</code> (guest <code>Cached = 0.3 GiB</code> at start) over
+      <code>n = 3</code> independent cold server restarts per config at <code>-c 32768</code>
+      (<code>MemoryAccounting=yes</code>, <code>MemorySwapMax=0</code>):
+      <code>Qwen3.8 MaxQ-64GB</code> (<code>60.0 GiB</code> cap: <code>48.35 GiB</code> cg.peak, <code>pgsteal=0</code>,
+      <code>15.64 &plusmn; 0.05 t/s</code> RC2 vs <code>8.78 &plusmn; 0.02</code> N=1 in
+      <code>qwen38_64gb_cgroup60g_v311.json</code>);
+      <code>DeepSeek-V4 284B MaxQ-v4</code> (<code>60.0 GiB</code> cap: <code>59.73 GiB</code> VmHWM /
+      <code>60.00 GiB</code> cg.peak, <code>8.88 &plusmn; 0.25 t/s</code> RC2 vs <code>7.68 &plusmn; 0.01</code> N=1 in
+      <code>dsv4_64gb_cgroup60g_v311.json</code>);
+      <code>Qwen3.8 MaxQ-32GB</code> (<code>28.5 GiB</code> cap: <code>28.08 GiB</code> VmHWM / <code>28.26 GiB</code>
+      cg.peak, <code>pgsteal=0</code>, <code>&gt;10.5 GiB</code> PLE lazily unfaulted, <code>14.58 &plusmn; 0.32 t/s</code>
+      RC2 vs <code>10.00 &plusmn; 0.01</code> N=1 in <code>qwen38_32gb_cgroup28g_v311.json</code>);
+      and <code>Nemotron MaxQ-16GB</code> (<code>15.0 GiB</code> cap: <code>14.92 GiB</code> VmHWM /
+      <code>15.00 GiB</code> cg.peak, <code>26.28 &plusmn; 0.19 t/s</code> RC2 vs <code>22.64 &plusmn; 0.03</code> N=1 in
+      <code>nemotron_16gb_cgroup15g_v311.json</code>).
+      <em>(Disclosure: Qwen3.8 64G/32G fit strictly below cap with <code>pgsteal=0</code>; DS-V4 60G and MaxQ-16GB 15G
+      exercise clean file-page reclaim at <code>-c 32768</code> with <code>Swap=0</code>, and on our ZFS hypervisor
+      reclaimed file refaults may hit host ZFS ARC rather than raw NVMe.)</em>
     </p>
 
     <div class="table-wrap">
@@ -124,44 +139,44 @@ cd llama-modchip
             <td><strong>64 GB</strong></td>
             <td><a href="https://huggingface.co/Synchopate/Qwen3.8-Flash-Next-MaxQ-64GB-GGUF">Qwen3.8-Flash-Next-MaxQ-64GB</a><br><small>176.5B total · 5B active · blk.48 MTP</small></td>
             <td><span class="tag std">Std ggml &le;42</span><br><small>v3.1.1 recommended (<code>-nr</code> upstream)</small></td>
-            <td>53.99 GiB<br><small>45.08 GiB VmHWM (60 GiB cgroup PASS)</small></td>
+            <td>53.99 GiB<br><small><strong>48.35 GiB</strong> cold cg (&le;60G, pgsteal=0)</small></td>
             <td><strong>3.4325</strong><br><small>0.4971 KLD vs BF16</small></td>
-            <td><strong>15.34 agg / 21.38 W1 t/s</strong><br><small>RouteCrack 2.0 (8.67 N=1)</small></td>
+            <td><strong>15.64&plusmn;0.05 / 22.00 W1</strong><br><small>Cold 60G cg (15.34 / 21.38 uncapped)</small></td>
           </tr>
           <tr>
             <td><strong>64 GB</strong></td>
             <td><a href="https://huggingface.co/Synchopate/DeepSeek-V4-Flash-0731-MaxQ-v4-64GB-CPU-GGUF">DeepSeek-V4-Flash-0731-MaxQ-v4</a><br><small>284.3B total · 13.2B active · 34L ConeCollapse</small></td>
             <td><span class="tag std">Std types + v3.1.1 bias</span><br><small>0 custom types; v3.1.1 loader</small></td>
-            <td>57.99 GiB<br><small>58.7–59.1 GiB RSS (74 GiB host)</small></td>
+            <td>57.99 GiB<br><small><strong>60.00 GiB</strong> cold cg (59.73 VmHWM, Swap=0)</small></td>
             <td><strong>6.8592</strong><br><small>0.6485 KLD (51c)</small></td>
-            <td><strong>7.79 agg / 12.31 W1 t/s</strong><br><small>RouteCrack 2.0 (6.80 N=1)</small></td>
+            <td><strong>8.88&plusmn;0.25 / 16.14 W1</strong><br><small>Cold 60G cg (7.79 / 12.31 uncapped)</small></td>
           </tr>
           <tr>
             <td><strong>32 GB</strong></td>
             <td><a href="https://huggingface.co/Synchopate/Qwen3.8-Flash-Next-MaxQ-32GB-GGUF">Qwen3.8-Flash-Next-MaxQ-32GB</a><br><small>24.98 GiB RAM + 10.73 GiB lazy NVMe PLE · 42L ConeCollapse</small></td>
             <td><span class="tag std">Std types + v3.1.1 bias</span><br><small>0 custom types; v3.1.1 loader</small></td>
-            <td>35.71 GiB<br><small><strong>27.44 GiB peak</strong> (26.91–27.44 &le;28.5)</small></td>
+            <td>35.71 GiB<br><small><strong>28.26 GiB</strong> cold cg (&le;28.5G, pgsteal=0)</small></td>
             <td><strong>5.8120</strong><br><small>1.0069 KLD vs BF16</small></td>
-            <td><strong>11.45 – 14.29 t/s</strong><br><small>Cgroup v2 28.5 GiB Swap=0 PASS</small></td>
+            <td><strong>14.58&plusmn;0.32 / 15.31 W1</strong><br><small>Cold 28.5G cg (10.00 N=1, Swap=0)</small></td>
           </tr>
           <tr>
             <td><strong>16 GB</strong></td>
             <td><a href="https://huggingface.co/Synchopate/NVIDIA-Nemotron-3.5-30B-A3B-MaxQ-16GB-GGUF">Nemotron-3.5-30B-MaxQ-16GB</a><br><small>30.2B total · 3B active · Mamba-2 + MoE</small></td>
-            <td><span class="tag std">Universal Std ggml</span><br><small>Unmodified Ollama / LM Studio</small></td>
-            <td>13.39 GiB<br><small><strong>14.304 GiB</strong> (&le;15.0 cgroup PASS)</small></td>
+            <td><span class="tag std">Universal Std ggml</span><br><small>Upstream llama.cpp (Q2_0=42)</small></td>
+            <td>13.39 GiB<br><small><strong>15.00 GiB</strong> cold cg (14.92 VmHWM, Swap=0)</small></td>
             <td><strong>7.3129</strong><br><small>0.1722 vs MXFP4</small></td>
-            <td><strong>15.10 N=1 / 27.80 refactor</strong><br><small>188.3 pp512 · 0 custom types</small></td>
+            <td><strong>26.28&plusmn;0.19 / 43.53 W1</strong><br><small>Cold 15G cg (22.64 N=1, 0 custom types)</small></td>
           </tr>
           <tr>
-            <td><strong>16 GB</strong></td>
+            <td><strong>16–24 GB</strong></td>
             <td><a href="https://huggingface.co/Synchopate/NVIDIA-Nemotron-3.5-30B-A3B-Fractal-64-CPU-GGUF">Nemotron-3.5-30B-Fractal-64</a><br><small>All 46 MoE tensors FRACTAL_64, 0 Q2_0</small></td>
             <td><span class="tag mod">Modchip Type 44</span><br><small>CPU SIMD + Apple Metal</small></td>
             <td>14.36 GiB<br><small>15.4–17.3 GiB RSS</small></td>
             <td><strong>6.6533</strong> (WT2 7.36)<br><small>0.0688 vs MXFP4 · 0.1254 vs BF16</small></td>
-            <td><strong>25.02 t/s</strong> Served Gate<br><small>78.6 M3 Max (PR #24) · 111.6 TR 7985WX</small></td>
+            <td><strong>25.02 t/s</strong> Served Gate<br><small>78.6 M3 Max Metal (PR #24)</small></td>
           </tr>
           <tr>
-            <td><strong>16 GB</strong></td>
+            <td><strong>16–24 GB</strong></td>
             <td><a href="https://huggingface.co/Synchopate/NVIDIA-Nemotron-3.5-30B-A3B-VQ3-64-CPU-GGUF">Nemotron-3.5-30B-VQ3-64</a><br><small>LUT-VQ3-64 + FRACTAL_64 CPU-Turbo</small></td>
             <td><span class="tag mod">Modchip 44/45</span><br><small>CPU AVX-512 VBMI / AVX2 / NEON</small></td>
             <td>13.30 GiB<br><small>14.6–16.04 GiB RSS</small></td>
@@ -188,9 +203,10 @@ cd llama-modchip
         <strong>Figure 1 — Disk Footprint vs. Blind Perplexity Pareto Frontier.</strong>
         Zero-overlap <code>wiki-alt.txt</code> evaluations across all three RAM tiers. On Qwen3.8-Flash-Next,
         MaxQ-64GB cuts KLD by 46.6% vs 54.40 GiB coder-pruned IQ1_M (256/512 experts) while preserving all 512/512 experts
-        and the blk.48 NextN MTP head; MaxQ-32GB (27.44 GiB peak VmHWM via 42L ConeCollapse + lazy NVMe PLE) is the sole
-        checkpoint verified under a strict 28.5 GiB Cgroup v2 ceiling with Swap=0. On Nemotron (c), only MaxQ-16GB
-        (14.304 GiB VmHWM) is cgroup-verified under 15.0 GiB; VQ3-64 and Fractal-64 are &lt;15.0 GiB on disk.
+        and the blk.48 NextN MTP head; MaxQ-32GB (28.26 GiB cold-cache cgroup peak via 42L ConeCollapse + lazy NVMe PLE,
+        <code>pgsteal=0</code>) is the sole checkpoint certified under a strict 28.5 GiB Cgroup v2 ceiling with Swap=0.
+        On DeepSeek-V4 (b), MaxQ-v4 passes cold-cache 60.0 GiB Cgroup v2 (Swap=0). On Nemotron (c), MaxQ-16GB passes
+        cold-cache 15.0 GiB Cgroup v2 (Swap=0), while VQ3-64 and Fractal-64 target 16–24 GB hosts.
       </figcaption>
     </figure>
 
@@ -199,8 +215,8 @@ cd llama-modchip
       <figcaption>
         <strong>Figure 2 — RouteCrack 2.0 Speculative Throughput Across 3 Flagship Architectures (16C Zen 5, 0 GPU, T=0).</strong>
         W1 (152-LOC refactor), W2 (multi-tool JSON), W3 (greenfield C99), W4 (bilingual prose), and aggregate tok/s
-        from single-run logs (Nemotron measured on <code>Fractal-MXFP4</code> reference; 5-rep Cgroup v2 CI for Qwen3.8 in
-        <code>qwen38_64gb_cgroup60g_v311.json</code>). Includes honest trade-offs: W4 free prose on non-MTP 284B DeepSeek-V4
+        from uncapped single-run logs (Nemotron measured on <code>Fractal-MXFP4</code> reference; separate cold-cache Cgroup v2
+        3-restart i.i.d. logs for all four flagships in <code>benchmarks/results/*_cgroup*_v311.json</code>). Includes honest trade-offs: W4 free prose on non-MTP 284B DeepSeek-V4
         runs -7.4% vs N=1, and aggregate RC2 vs v3.0 deltas on DeepSeek (+0.84%) and Nemotron (+3.96%) fall within single-run
         variance. Greedy T=0 outputs are 100% bit-exact on structured W1+W2 across all 3 models, with batch-GEMM FP drift on
         high-entropy W3/W4.
@@ -211,7 +227,7 @@ cd llama-modchip
   <section id="hardware">
     <h2>Wanted Hardware Runs</h2>
     <p>
-      Community members have verified <code>llama-modchip</code> on Zen 5, Threadripper PRO 7985WX (111.62 t/s on Nemotron),
+      Community members have verified <code>llama-modchip</code> on Zen 5, Threadripper PRO 7985WX (111.62 t/s on Nemotron-30B <code>Q4_0</code>, Issue #1),
       Threadripper 9960X (54.43 t/s on Nemotron VQ3-64), Apple M5 Max (27.0 t/s on historical withdrawn 284B DeepSeek-V4
       <code>Fractal</code>; <code>MaxQ-v4</code> awaits fresh M5 Max run), AWS Graviton3 (44.97 t/s on Nemotron), and Dual
       Broadwell Xeon. We are actively looking for reproducible <code>./modchip bench</code> scorecards on three missing
